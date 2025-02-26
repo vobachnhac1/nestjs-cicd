@@ -1,0 +1,61 @@
+name: Build, Test, and Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*' # Kích hoạt khi có push tag theo định dạng vX.X.X
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build project
+        run: npm run build
+
+      - name: Create release directory
+        run: mkdir -p release && cp -r dist/* release/
+
+      - name: Archive release
+        run: tar -czvf release.tar.gz -C release .
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: release
+          path: release.tar.gz
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release.tar.gz
+          asset_name: release.tar.gz
+          asset_content_type: application/gzip
