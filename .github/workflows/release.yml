@@ -4,6 +4,9 @@ on:
   push:
     tags:
       - 'v*.*.*' # Kích hoạt khi có push tag theo định dạng vX.X.X
+      
+permissions:
+    contents: write
 
 jobs:
   build:
